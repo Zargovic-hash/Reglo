@@ -1,0 +1,44 @@
+<svg width="250" height="250" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<!-- Dégradé pour le bouclier : donne une impression de profondeur et de modernité -->
+<linearGradient id="shieldGradient" x1="50" y1="5" x2="50" y2="95" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3498db"/> <!-- Bleu ciel (Confiance, Technologie) -->
+<stop offset="1" stop-color="#2c3e50"/> <!-- Bleu foncé (Réglementation, Stabilité) -->
+</linearGradient>
+<!-- Dégradé pour le symbole de validation : un vert dynamique pour HSE et 'Next' -->
+<linearGradient id="checkmarkGradient" x1="30" y1="40" x2="70" y2="75" gradientUnits="userSpaceOnUse">
+<stop stop-color="#2ecc71"/> <!-- Vert vif (Sécurité, Environnement) -->
+<stop offset="1" stop-color="#27ae60"/> <!-- Vert sombre -->
+</linearGradient>
+</defs>
+
+<style>
+    .shield-outline-dark { stroke: #1f2a36; stroke-width: 2; } 
+    .checkmark-shadow { fill: none; stroke: #1f2a3620; stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+    .text-style-advanced { font-family: "Inter", sans-serif; font-size: 10px; fill: #2c3e50; font-weight: 800; }
+</style>
+
+<!-- 1. Le Bouclier Stylisé (Protection et Stabilité) -->
+<!-- Forme asymétrique pour un look plus moderne et dynamique -->
+<path class="shield-outline-dark" 
+      fill="url(#shieldGradient)" 
+      d="M10 15 C 10 5 90 5 90 15 L 90 65 C 90 80 50 95 50 95 C 50 95 10 80 10 65 Z" 
+      transform="translate(0, -5)"/>
+      
+<!-- 2. Ombre légère du Checkmark pour un effet 3D subtil -->
+<path class="checkmark-shadow" d="M30 50 L 50 75 L 80 35" transform="translate(0, -5)"/>
+
+<!-- 3. Le Symbole de Conformité (Checkmark/Vérification) -->
+<!-- Ligne épaisse et dynamique pour le 'Next' -->
+<path fill="none" 
+      stroke="url(#checkmarkGradient)" 
+      stroke-width="7" 
+      stroke-linecap="round" 
+      stroke-linejoin="round" 
+      d="M30 50 L 50 75 L 80 35" 
+      transform="translate(0, -5)"/>
+
+<!-- 4. Le Texte du Logo "SafeNext" -->
+<text x="50" y="90" text-anchor="middle" class="text-style-advanced">SafeNext</text>
+
+</svg>
