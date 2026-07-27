@@ -1,15 +1,150 @@
 // controllers/reportController.js
 import { pool } from "../db.js";
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import PDFDocument from "pdfkit";
 import ExcelJS from "exceljs";
 import moment from "moment";
+
+// ============================
+// 📄 UTILITAIRES PDFKIT (pas de navigateur, léger en mémoire)
+// ============================
+const truncate = (value, max = 60) => {
+  const s = value === null || value === undefined ? "N/A" : String(value);
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+};
+
+const drawPdfTable = (doc, headers, rows) => {
+  const startX = doc.page.margins.left;
+  const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const colWidth = usableWidth / headers.length;
+  const rowHeight = 18;
+
+  const drawHeaderRow = () => {
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#ffffff");
+    doc.rect(startX, doc.y, usableWidth, rowHeight).fill("#2563eb");
+    const y = doc.y - rowHeight + 5;
+    headers.forEach((h, i) => {
+      doc.fillColor("#ffffff").text(truncate(h, 20), startX + i * colWidth + 3, y, {
+        width: colWidth - 6,
+        height: rowHeight,
+      });
+    });
+    doc.y += 0;
+  };
+
+  const ensureSpace = () => {
+    if (doc.y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      drawHeaderRow();
+    }
+  };
+
+  drawHeaderRow();
+  doc.font("Helvetica").fontSize(7.5).fillColor("#1e293b");
+
+  rows.forEach((row, rowIndex) => {
+    ensureSpace();
+    const y = doc.y;
+    if (rowIndex % 2 === 1) {
+      doc.rect(startX, y, usableWidth, rowHeight).fill("#f8fafc");
+      doc.fillColor("#1e293b");
+    }
+    row.forEach((cell, i) => {
+      doc.text(truncate(cell, 40), startX + i * colWidth + 3, y + 5, {
+        width: colWidth - 6,
+        height: rowHeight,
+      });
+    });
+    doc.y = y + rowHeight;
+  });
+  doc.moveDown(1);
+};
+
+const buildPdfReportBuffer = ({ type, title, data, filters }) =>
+  new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 40, layout: "landscape" });
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const currentDate = moment().format("DD/MM/YYYY à HH:mm");
+      doc.fontSize(18).fillColor("#2563eb").font("Helvetica-Bold").text(title, { align: "center" });
+      doc.fontSize(10).fillColor("#666666").font("Helvetica").text(`Généré le ${currentDate}`, { align: "center" });
+      doc.text("Reglo+ - Système d'Audit Réglementaire", { align: "center" });
+      doc.moveDown(1);
+
+      if (filters && Object.keys(filters).length > 0) {
+        doc.fontSize(9).fillColor("#475569").text(
+          `Filtres appliqués : ${Object.entries(filters).map(([k, v]) => `${k}: ${v}`).join(" • ")}`
+        );
+        doc.moveDown(0.5);
+      }
+
+      if (type === "dashboard") {
+        const { stats = {}, domains = [] } = data;
+        doc.fontSize(11).fillColor("#0f172a").font("Helvetica-Bold").text(
+          `Total: ${stats.total_audits || 0}   Conformes: ${stats.conformes || 0}   ` +
+          `Non conformes: ${stats.non_conformes || 0}   En cours: ${stats.en_cours || 0}`
+        );
+        doc.moveDown(1);
+        drawPdfTable(
+          doc,
+          ["Domaine", "Total", "Conformes", "Non conformes", "Taux"],
+          (domains || []).map((d) => [
+            d.domaine || "N/A",
+            d.total || 0,
+            d.conformes || 0,
+            d.non_conformes || 0,
+            `${d.total > 0 ? Math.round((d.conformes / d.total) * 100) : 0}%`,
+          ])
+        );
+      } else if (type === "audit") {
+        drawPdfTable(
+          doc,
+          ["ID", "Domaine", "Titre", "Conformité", "Priorité", "Faisabilité", "Responsable", "Échéance"],
+          (data || []).map((a) => [
+            a.id,
+            a.domaine,
+            a.titre,
+            a.conformite,
+            a.prioritée,
+            a.faisabilite,
+            a.owner,
+            a.deadline ? moment(a.deadline).format("DD/MM/YYYY") : "N/A",
+          ])
+        );
+      } else {
+        drawPdfTable(
+          doc,
+          ["Titre", "Exigence", "Conformité", "Priorité", "Faisabilité", "Responsable", "Échéance"],
+          (data || []).map((r) => [
+            r.titre,
+            r.exigence,
+            r.conformite,
+            r.prioritée,
+            r.faisabilite,
+            r.owner,
+            r.deadline ? moment(r.deadline).format("DD/MM/YYYY") : "N/A",
+          ])
+        );
+      }
+
+      doc.moveDown(1);
+      doc.fontSize(8).fillColor("#94a3b8").text(`© ${new Date().getFullYear()} Reglo+ - Tous droits réservés`, {
+        align: "center",
+      });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 
 // ============================
 // 📊 GÉNÉRATION RAPPORT PDF
 // ============================
 export const generatePDFReport = async (req, res) => {
-  let browser = null;
   try {
     const { type, filters = {} } = req.body;
     const userId = req.user.id;
@@ -18,7 +153,7 @@ export const generatePDFReport = async (req, res) => {
     console.log(`📊 Génération rapport PDF - Type: ${type}, Utilisateur: ${userId}`);
 
     let data, title, filename;
-    
+
     switch (type) {
       case 'audit':
         ({ data, title, filename } = await getAuditData(filters, userId, isAdmin));
@@ -33,28 +168,7 @@ export const generatePDFReport = async (req, res) => {
         return res.status(400).json({ error: "Type de rapport non supporté" });
     }
 
-    const html = generateHTMLReport(data, title, type, filters);
-
-    browser = await puppeteer.launch({
-      headless: true,
-      args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      defaultViewport: chromium.defaultViewport,
-    });
-
-    const page = await browser.newPage();
-await page.setContent(html, { waitUntil: 'domcontentloaded' });
-    
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm'
-      }
-    });
+    const pdfBuffer = await buildPdfReportBuffer({ type, title, data, filters });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -64,14 +178,6 @@ await page.setContent(html, { waitUntil: 'domcontentloaded' });
     console.error("❌ Erreur génération PDF:", err.message);
     console.error("Stack trace:", err.stack);
     res.status(500).json({ error: `Erreur lors de la génération du rapport PDF: ${err.message}` });
-  } finally {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error("❌ Erreur fermeture browser:", closeError.message);
-      }
-    }
   }
 };
 
@@ -516,272 +622,6 @@ const getReglementationData = async (filters, userId, isAdmin) => {
     console.error("❌ Erreur getReglementationData:", error.message);
     throw new Error(`Erreur lors de la récupération des données réglementation: ${error.message}`);
   }
-};
-
-// ============================
-// 🎨 GÉNÉRATION HTML POUR PDF
-// ============================
-const generateHTMLReport = (data, title, type, filters) => {
-  const currentDate = moment().format('DD/MM/YYYY à HH:mm');
-  
-  let content = '';
-  
-  try {
-    if (type === 'dashboard') {
-      content = generateDashboardHTML(data);
-    } else if (type === 'audit') {
-      content = generateAuditHTML(data);
-    } else {
-      content = generateReglementationHTML(data);
-    }
-  } catch (error) {
-    console.error("❌ Erreur génération HTML:", error.message);
-    content = `<p>Erreur lors de la génération du contenu: ${error.message}</p>`;
-  }
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>${title}</title>
-      <style>
-        body { 
-          font-family: Arial, sans-serif; 
-          margin: 0; 
-          padding: 20px; 
-          color: #333;
-          line-height: 1.6;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #3b82f6; 
-          padding-bottom: 20px; 
-          margin-bottom: 30px;
-        }
-        .header h1 { 
-          color: #3b82f6; 
-          margin: 0; 
-          font-size: 24px;
-        }
-        .header p { 
-          color: #666; 
-          margin: 5px 0 0 0; 
-          font-size: 14px;
-        }
-        .filters { 
-          background: #f8f9fa; 
-          padding: 15px; 
-          border-radius: 5px; 
-          margin-bottom: 20px;
-          font-size: 12px;
-        }
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin-top: 20px;
-          font-size: 10px;
-        }
-        th, td { 
-          border: 1px solid #dee2e6; 
-          padding: 4px; 
-          text-align: left;
-          vertical-align: top;
-        }
-        th { 
-          background: #3b82f6; 
-          color: white; 
-          font-weight: bold;
-        }
-        tr:nth-child(even) { 
-          background: #f8f9fa; 
-        }
-        .stats-grid { 
-          display: grid; 
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
-          gap: 15px; 
-          margin-bottom: 20px;
-        }
-        .stat-card { 
-          background: #f8f9fa; 
-          padding: 15px; 
-          border-radius: 5px; 
-          text-align: center;
-          border-left: 4px solid #3b82f6;
-        }
-        .stat-number { 
-          font-size: 24px; 
-          font-weight: bold; 
-          color: #3b82f6;
-        }
-        .stat-label { 
-          font-size: 12px; 
-          color: #666; 
-          margin-top: 5px;
-        }
-        .footer { 
-          margin-top: 30px; 
-          text-align: center; 
-          font-size: 10px; 
-          color: #666;
-          border-top: 1px solid #dee2e6;
-          padding-top: 10px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>${title}</h1>
-        <p>Généré le ${currentDate}</p>
-        <p>SafeNext - Système d'Audit Réglementaire</p>
-      </div>
-      
-      ${Object.keys(filters).length > 0 ? `
-        <div class="filters">
-          <h3>Filtres appliqués :</h3>
-          ${Object.entries(filters).map(([key, value]) => 
-            `<span><strong>${key}:</strong> ${value}</span>`
-          ).join(' • ')}
-        </div>
-      ` : ''}
-      
-      ${content}
-      
-      <div class="footer">
-        <p>Rapport généré automatiquement par SafeNext</p>
-        <p>© ${new Date().getFullYear()} SafeNext - Tous droits réservés</p>
-      </div>
-    </body>
-    </html>
-  `;
-};
-
-// ============================
-// 📊 HTML DASHBOARD
-// ============================
-const generateDashboardHTML = (data) => {
-  const { stats, domains } = data;
-  
-  return `
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">${stats?.total_audits || 0}</div>
-        <div class="stat-label">Total Audits</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${stats?.conformes || 0}</div>
-        <div class="stat-label">Conformes</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${stats?.non_conformes || 0}</div>
-        <div class="stat-label">Non Conformes</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${stats?.en_cours || 0}</div>
-        <div class="stat-label">En Cours</div>
-      </div>
-    </div>
-    
-    <h3>Répartition par Domaine</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Domaine</th>
-          <th>Total</th>
-          <th>Conformes</th>
-          <th>Non Conformes</th>
-          <th>Taux</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${domains?.map(domain => `
-          <tr>
-            <td>${domain?.domaine || 'N/A'}</td>
-            <td>${domain?.total || 0}</td>
-            <td>${domain?.conformes || 0}</td>
-            <td>${domain?.non_conformes || 0}</td>
-            <td>${domain?.total > 0 ? Math.round((domain.conformes / domain.total) * 100) : 0}%</td>
-          </tr>
-        `).join('') || '<tr><td colspan="5">Aucune donnée disponible</td></tr>'}
-      </tbody>
-    </table>
-  `;
-};
-
-// ============================
-// 📋 HTML AUDIT
-// ============================
-const generateAuditHTML = (data) => {
-  return `
-    <h3>Détail des Audits (${data?.length || 0} éléments)</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Domaine</th>
-          <th>Titre</th>
-          <th>Conformité</th>
-          <th>Priorité</th>
-          <th>Faisabilité</th>
-          <th>Responsable</th>
-          <th>Échéance</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data?.map(audit => `
-          <tr>
-            <td>${audit?.id || 'N/A'}</td>
-            <td>${audit?.domaine || 'N/A'}</td>
-            <td>${audit?.titre || 'N/A'}</td>
-            <td>${audit?.conformite || 'N/A'}</td>
-            <td>${audit?.prioritée || 'N/A'}</td>
-            <td>${audit?.faisabilite || 'N/A'}</td>
-            <td>${audit?.owner || 'N/A'}</td>
-            <td>${audit?.deadline ? moment(audit.deadline).format('DD/MM/YYYY') : 'N/A'}</td>
-            <td>${audit?.created_at ? moment(audit.created_at).format('DD/MM/YYYY') : 'N/A'}</td>
-          </tr>
-        `).join('') || '<tr><td colspan="9">Aucune donnée disponible</td></tr>'}
-      </tbody>
-    </table>
-  `;
-};
-
-// ============================
-// 📋 HTML RÉGLEMENTATION
-// ============================
-const generateReglementationHTML = (data) => {
-  return `
-    <h3>Réglementation (${data?.length || 0} éléments)</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Titre</th>
-          <th>Exigence</th>
-          <th>Conformité</th>
-          <th>Priorité</th>
-          <th>Faisabilité</th>
-          <th>Plan Action</th>
-          <th>Responsable</th>
-          <th>Échéance</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data?.map(reg => `
-          <tr>
-            <td>${reg?.titre || 'N/A'}</td>
-            <td>${reg?.exigence ? (reg.exigence.length > 100 ? reg.exigence.substring(0, 100) + '...' : reg.exigence) : 'N/A'}</td>
-            <td>${reg?.conformite || 'N/A'}</td>
-            <td>${reg?.prioritée || 'N/A'}</td>
-            <td>${reg?.faisabilite || 'N/A'}</td>
-            <td>${reg?.plan_action ? (reg.plan_action.length > 100 ? reg.plan_action.substring(0, 100) + '...' : reg.plan_action) : 'N/A'}</td>
-            <td>${reg?.owner || 'N/A'}</td>
-            <td>${reg?.deadline ? moment(reg.deadline).format('DD/MM/YYYY') : 'N/A'}</td>
-          </tr>
-        `).join('') || '<tr><td colspan="8">Aucune donnée disponible</td></tr>'}
-      </tbody>
-    </table>
-  `;
 };
 
 // ============================
