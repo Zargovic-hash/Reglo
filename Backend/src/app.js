@@ -63,6 +63,7 @@ app.use("/api/", limiter);
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://reglo-landing.onrender.com",
+  "https://reglo-backend-egxc.onrender.com",
   "https://safenext-1.onrender.com",
   "https://safenext-1.onrender.com/recap",
   "https://safenext-1.onrender.com/reglementation",
