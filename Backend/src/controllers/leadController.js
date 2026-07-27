@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
-import nodemailer from "nodemailer";
 import moment from "moment";
 import { pool } from "../db.js";
+import { sendEmail } from "../utils/mailer.js";
 
 // ============================
 // 📋 EXIGENCES RÉELLES — chargées dynamiquement depuis reglementation_all
@@ -84,34 +84,6 @@ const computeNonConformGroupes = (questions, answersById) => {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TELEPHONE_REGEX = /^[0-9+()\s.-]{8,20}$/;
-
-// ============================
-// 🚀 TRANSPORTEUR NODEMAILER (même config SMTP que authController.js)
-// ============================
-const createTransporter = async () => {
-  if (process.env.NODE_ENV === "development" && !process.env.SMTP_HOST) {
-    const testAccount = await nodemailer.createTestAccount();
-    console.log("📧 Compte de test Ethereal généré:", testAccount.user);
-    return nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
-      auth: { user: testAccount.user, pass: testAccount.pass },
-    });
-  }
-
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error("Configuration SMTP incomplète");
-  }
-
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    ...(process.env.SMTP_HOST === "smtp.gmail.com" && { service: "gmail" }),
-  });
-};
 
 // ============================
 // ✅ VALIDATION
@@ -307,13 +279,11 @@ export const createLeadAuditEnvironnement = async (req, res) => {
     let emailSent = false;
     try {
       const pdfBuffer = await generateReportPDF({ nom, score, niveau, answersById, questions });
-      const transporter = await createTransporter();
 
-      await transporter.sendMail({
-        from: process.env.FROM_EMAIL || process.env.SMTP_USER,
-        to: email.trim(),
-        subject: "Votre rapport de conformité Reglo+",
-        html: `
+      await sendEmail(
+        email.trim(),
+        "Votre rapport de conformité Reglo+",
+        `
           <p>Bonjour${nom ? ` ${nom}` : ""},</p>
           <p>Merci d'avoir réalisé votre audit de conformité "Autorisation & gouvernance environnementale" avec Reglo+.</p>
           <p><strong>Votre niveau de conformité : ${niveau} (${score}%)</strong></p>
@@ -324,14 +294,13 @@ export const createLeadAuditEnvironnement = async (req, res) => {
           accès à la plateforme Reglo+ pour suivre vos actions correctives. Répondez à cet email pour en discuter.</p>
           <p>L'équipe Reglo+</p>
         `,
-        attachments: [
+        [
           {
             filename: `rapport_conformite_reglo_plus_${moment().format("YYYY-MM-DD")}.pdf`,
             content: pdfBuffer,
-            contentType: "application/pdf",
           },
-        ],
-      });
+        ]
+      );
       emailSent = true;
     } catch (emailError) {
       console.error("❌ Erreur envoi email rapport de conformité:", emailError.message);
