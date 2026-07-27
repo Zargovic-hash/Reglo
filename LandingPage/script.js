@@ -54,12 +54,15 @@ function renderQuestions() {
   questionGroupsEl.querySelectorAll(".options").forEach((optionsEl) => {
     const questionId = optionsEl.dataset.questionId;
     optionsEl.querySelectorAll(".option").forEach((optionEl) => {
-      optionEl.addEventListener("click", () => {
+      const input = optionEl.querySelector("input");
+      // Écoute "change" sur l'input (et non "click" sur le label) : cliquer sur un
+      // <label> déclenche un click natif sur le label ET un click forwardé sur son
+      // <input> associé, ce qui ferait avancer le quiz de 2 questions d'un coup.
+      input.addEventListener("change", () => {
         const value = optionEl.dataset.value;
         answers[questionId] = value;
         optionsEl.querySelectorAll(".option").forEach((o) => o.classList.remove("selected"));
         optionEl.classList.add("selected");
-        optionEl.querySelector("input").checked = true;
 
         if (currentIndex < QUESTIONS.length - 1) {
           setTimeout(() => goToQuestion(currentIndex + 1), 200);
