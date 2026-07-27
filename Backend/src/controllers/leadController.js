@@ -26,6 +26,52 @@ const fetchQuestions = async () => {
 const SCORE_VALUES = { oui: 1, non: 0 };
 const VALID_REPONSES = new Set([...Object.keys(SCORE_VALUES), "non_applicable"]);
 
+// ============================
+// 🎯 ÉTUDES RECOMMANDÉES — déclenchées quand le lead répond "non" sur au
+// moins une question du groupe (titre) correspondant.
+// ============================
+const SERVICES_BY_GROUPE = {
+  "Autorisation d exploitation": {
+    label: "Étude & dossier d'autorisation d'exploitation",
+    description:
+      "Constitution et dépôt de votre dossier de demande d'autorisation d'exploitation auprès de la Direction de l'Environnement de wilaya.",
+  },
+  "Taxes et frais environnementaux": {
+    label: "Mise en conformité fiscale environnementale",
+    description:
+      "Calcul et sécurisation de vos déclarations de taxes et redevances environnementales pour éviter tout redressement.",
+  },
+};
+
+// Études toujours proposées, indépendamment du quiz, car non couvertes par
+// ses questions actuelles (audit environnemental global, étude de danger,
+// produits dangereux).
+const AUTRES_ETUDES = [
+  {
+    label: "Audit environnemental complet",
+    description:
+      "Diagnostic complet de votre conformité sur l'ensemble des domaines EHS (air, eau, déchets, produits chimiques, sécurité...).",
+  },
+  {
+    label: "Étude de danger",
+    description:
+      "Analyse des risques industriels et des scénarios d'accidents majeurs, exigée pour les installations classées à risque.",
+  },
+  {
+    label: "Rapport sur les produits dangereux",
+    description:
+      "Inventaire, classification et plan de gestion des matières et produits chimiques dangereux présents sur site.",
+  },
+];
+
+const computeNonConformGroupes = (questions, answersById) => {
+  const groupes = new Set();
+  questions.forEach((q) => {
+    if (answersById[q.id] === "non") groupes.add(q.groupe);
+  });
+  return [...groupes];
+};
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TELEPHONE_REGEX = /^[0-9+()\s.-]{8,20}$/;
 
@@ -109,6 +155,44 @@ const buildReportHTML = ({ nom, score, niveau, answersById, questions }) => {
   const niveauColor = niveau === "Conforme" ? "#22c55e" : niveau === "Partiellement conforme" ? "#f59e0b" : "#ef4444";
   const reponseLabel = { oui: "Oui", non: "Non", non_applicable: "Non applicable" };
 
+  const nonConformGroupes = computeNonConformGroupes(questions, answersById);
+  const recommendedServices = nonConformGroupes
+    .map((groupe) => SERVICES_BY_GROUPE[groupe])
+    .filter(Boolean);
+
+  const serviceItemHTML = (s) => `
+    <div class="reco-item">
+      <strong>${s.label}</strong>
+      <p>${s.description}</p>
+    </div>
+  `;
+
+  const recoSectionHTML = recommendedServices.length
+    ? `
+      <div class="reco-section">
+        <h2>Nos recommandations pour vous mettre en conformité</h2>
+        ${recommendedServices.map(serviceItemHTML).join("")}
+      </div>
+    `
+    : "";
+
+  const otherSectionHTML = `
+    <div class="reco-section other-section">
+      <h2>D'autres vérifications réglementaires à ne pas négliger</h2>
+      <p>
+        Ce test couvre uniquement les autorisations d'exploitation et les taxes environnementales.
+        Notre base de données réglementaire couvre bien d'autres domaines (air, eau, déchets, produits
+        chimiques, sécurité, santé au travail...) sur lesquels votre établissement peut également être exposé.
+      </p>
+      ${AUTRES_ETUDES.map(serviceItemHTML).join("")}
+      <p class="platform-note">
+        <strong>Notre bureau peut vous accompagner</strong> sur l'ensemble de ces démarches, et vous donner accès
+        à la plateforme Reglo+ : une base de données réglementaire complète ainsi qu'un outil de planification et
+        de suivi de vos actions correctives.
+      </p>
+    </div>
+  `;
+
   const rows = questions.map((q) => {
     const reponse = answersById[q.id];
     return `
@@ -140,6 +224,14 @@ const buildReportHTML = ({ nom, score, niveau, answersById, questions }) => {
         th { background: #3b82f6; color: white; }
         tr:nth-child(even) { background: #f8f9fa; }
         .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #dee2e6; padding-top: 10px; }
+        .reco-section { margin-top: 30px; padding: 18px 20px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa; page-break-inside: avoid; }
+        .reco-section h2 { font-size: 16px; color: #1d4ed8; margin: 0 0 10px; }
+        .reco-section p { font-size: 12px; margin: 0 0 12px; }
+        .reco-item { margin-bottom: 10px; }
+        .reco-item strong { font-size: 13px; color: #1e293b; }
+        .reco-item p { font-size: 12px; color: #475569; margin: 2px 0 0; }
+        .other-section { background: #eff6ff; }
+        .platform-note { margin-top: 14px; font-size: 12px; color: #1e293b; }
       </style>
     </head>
     <body>
@@ -159,6 +251,8 @@ const buildReportHTML = ({ nom, score, niveau, answersById, questions }) => {
         </thead>
         <tbody>${rows}</tbody>
       </table>
+      ${recoSectionHTML}
+      ${otherSectionHTML}
       <div class="footer">
         <p>Ce rapport est une auto-évaluation basée sur vos réponses et ne remplace pas un audit réglementaire complet réalisé par Reglo+.</p>
         <p>© ${new Date().getFullYear()} Reglo+ - Tous droits réservés</p>
@@ -239,7 +333,11 @@ export const createLeadAuditEnvironnement = async (req, res) => {
           <p>Bonjour${nom ? ` ${nom}` : ""},</p>
           <p>Merci d'avoir réalisé votre audit de conformité "Autorisation & gouvernance environnementale" avec Reglo+.</p>
           <p><strong>Votre niveau de conformité : ${niveau} (${score}%)</strong></p>
-          <p>Vous trouverez le détail de votre audit dans le rapport PDF ci-joint.</p>
+          <p>Vous trouverez le détail de votre audit dans le rapport PDF ci-joint, ainsi que nos recommandations
+          personnalisées et les autres vérifications réglementaires à ne pas négliger.</p>
+          <p>Notre bureau peut vous accompagner dans la préparation de vos études de mise en conformité
+          (autorisation d'exploitation, audit environnemental, étude de danger, produits dangereux) et vous donner
+          accès à la plateforme Reglo+ pour suivre vos actions correctives. Répondez à cet email pour en discuter.</p>
           <p>L'équipe Reglo+</p>
         `,
         attachments: [
