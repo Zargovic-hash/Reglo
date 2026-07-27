@@ -6,11 +6,16 @@ import { pool } from "../db.js";
 // ============================
 // 📋 EXIGENCES RÉELLES — chargées dynamiquement depuis reglementation_all
 // (domaine "Autorisations et gouvernance Environnementales", Titres
-// "Taxes et frais environnementaux" et "Autorisation d exploitation").
+// "Taxes et frais environnementaux", "Autorisation d exploitation" et
+// "Délégués pour l'environnement").
 // Toute modification faite dans l'app Reglo+ se reflète automatiquement ici.
 // ============================
 const DOMAINE = "Autorisations et gouvernance Environnementales";
-const TITRES = ["Taxes et frais environnementaux", "Autorisation d exploitation"];
+const TITRES = [
+  "Taxes et frais environnementaux",
+  "Autorisation d exploitation",
+  "Délégués pour l’environnement",
+];
 
 const fetchQuestions = async () => {
   const { rows } = await pool.query(
@@ -40,6 +45,11 @@ const SERVICES_BY_GROUPE = {
     label: "Mise en conformité fiscale environnementale",
     description:
       "Calcul et sécurisation de vos déclarations de taxes et redevances environnementales pour éviter tout redressement.",
+  },
+  "Délégués pour l’environnement": {
+    label: "Désignation du délégué à l'environnement",
+    description:
+      "Accompagnement pour la désignation et la déclaration de votre délégué à l'environnement conformément à la réglementation en vigueur.",
   },
 };
 
