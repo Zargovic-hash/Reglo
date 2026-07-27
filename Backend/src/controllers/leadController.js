@@ -137,43 +137,153 @@ const REPONSE_COLOR = { oui: "#16a34a", non: "#dc2626", non_applicable: "#64748b
 const niveauColorFor = (niveau) =>
   niveau === "Conforme" ? "#16a34a" : niveau === "Partiellement conforme" ? "#d97706" : "#dc2626";
 
+const BRAND_GREEN_DARK = "#14532d";
+const BRAND_GREEN = "#16a34a";
+const BRAND_GREEN_LIGHT = "#dcfce7";
+const BRAND_BLUE = "#2563eb";
+
 const drawServiceItem = (doc, service) => {
   doc.fontSize(11).fillColor("#1e293b").font("Helvetica-Bold").text(service.label, { continued: false });
   doc.fontSize(10).fillColor("#475569").font("Helvetica").text(service.description);
   doc.moveDown(0.5);
 };
 
+// Petite pastille colorée (Oui / Non / Non applicable), plus rapide à scanner qu'un texte simple.
+const drawReponsePill = (doc, reponse) => {
+  const label = REPONSE_LABEL[reponse] || "N/A";
+  const color = REPONSE_COLOR[reponse] || "#64748b";
+  const paddingX = 8;
+  const pillHeight = 16;
+
+  doc.font("Helvetica-Bold").fontSize(8.5);
+  const pillWidth = doc.widthOfString(label) + paddingX * 2;
+  const x = doc.page.margins.left;
+  const y = doc.y;
+
+  doc.roundedRect(x, y, pillWidth, pillHeight, 4).fill(color);
+  doc.fillColor("#ffffff").text(label, x, y + 3.5, { width: pillWidth, align: "center", lineBreak: false });
+
+  doc.x = doc.page.margins.left;
+  doc.y = y + pillHeight + 8;
+};
+
+// Bandeau de marque en haut de la première page (Smart Safety Services + Reglo+).
+const drawBrandHeader = (doc, { nom, currentDate }) => {
+  const bandHeight = 92;
+  const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  doc.rect(0, 0, doc.page.width, bandHeight).fill(BRAND_GREEN_DARK);
+
+  // Marque vectorielle : carré blanc + coche verte (pas d'image externe)
+  const markSize = 34;
+  const markX = doc.page.margins.left;
+  const markY = 20;
+  doc.roundedRect(markX, markY, markSize, markSize, 8).fill("#ffffff");
+  doc.lineWidth(3).strokeColor(BRAND_GREEN)
+    .moveTo(markX + 8, markY + 18).lineTo(markX + 15, markY + 25).lineTo(markX + 27, markY + 9).stroke();
+
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15)
+    .text("Smart Safety Services", markX + markSize + 12, markY, { lineBreak: false });
+  doc.fillColor(BRAND_GREEN_LIGHT).font("Helvetica").fontSize(9)
+    .text("Reglo+ — Rapport de conformité environnementale", markX + markSize + 12, markY + 19, { lineBreak: false });
+
+  doc.fillColor("#ffffff").font("Helvetica").fontSize(8.5)
+    .text(currentDate, doc.page.margins.left, markY + 2, { width: usableWidth, align: "right" });
+  if (nom) {
+    doc.text(`Établissement : ${nom}`, doc.page.margins.left, markY + 16, { width: usableWidth, align: "right" });
+  }
+
+  doc.x = doc.page.margins.left;
+  doc.y = bandHeight + 24;
+};
+
+// Résumé exécutif : score, niveau, et priorités si des non-conformités ont été détectées.
+const drawExecutiveSummary = (doc, { score, niveau, recommendedServices }) => {
+  const niveauColor = niveauColorFor(niveau);
+
+  doc.fontSize(34).fillColor(niveauColor).font("Helvetica-Bold").text(`${score}%`, { align: "center" });
+  doc.fontSize(14).fillColor(niveauColor).font("Helvetica-Bold").text(niveau, { align: "center" });
+  doc.moveDown(0.8);
+
+  if (recommendedServices.length) {
+    const boxX = doc.page.margins.left;
+    const boxWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const boxY = doc.y;
+
+    doc.font("Helvetica").fontSize(10);
+    const lines = recommendedServices.map((s) => `•  ${s.label}`);
+    const textHeight = lines.reduce((h, l) => h + doc.heightOfString(l, { width: boxWidth - 32 }) + 4, 0);
+    const boxHeight = textHeight + 40;
+
+    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, 8).fill("#fef2f2");
+    doc.fillColor("#b91c1c").fontSize(11).text("Priorités identifiées", boxX + 16, boxY + 12);
+    doc.font("Helvetica").fontSize(10).fillColor("#7f1d1d");
+    let lineY = boxY + 30;
+    lines.forEach((l) => {
+      doc.text(l, boxX + 16, lineY, { width: boxWidth - 32 });
+      lineY = doc.y + 4;
+    });
+
+    doc.x = doc.page.margins.left;
+    doc.y = boxY + boxHeight + 16;
+  }
+
+  doc.moveTo(doc.page.margins.left, doc.y)
+    .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+    .strokeColor("#e2e8f0").stroke();
+  doc.moveDown(1);
+};
+
+// Pied de page (coordonnées + identifiants légaux + numérotation), répété sur chaque page.
+const drawFooters = (doc) => {
+  const range = doc.bufferedPageRange();
+  const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+  for (let i = range.start; i < range.start + range.count; i++) {
+    doc.switchToPage(i);
+    const bottomY = doc.page.height - doc.page.margins.bottom + 14;
+
+    doc.moveTo(doc.page.margins.left, bottomY - 6)
+      .lineTo(doc.page.width - doc.page.margins.right, bottomY - 6)
+      .strokeColor("#e2e8f0").stroke();
+
+    // Écrire sous la marge basse déclenche normalement un saut de page automatique chez
+    // pdfkit (même en position absolue) : on désactive temporairement cette marge.
+    const originalBottomMargin = doc.page.margins.bottom;
+    doc.page.margins.bottom = 0;
+
+    doc.font("Helvetica").fontSize(7.5).fillColor("#94a3b8").text(
+      "Smart Safety Services — Agrément N° à compléter · RC à compléter · NIF à compléter · AI à compléter",
+      doc.page.margins.left,
+      bottomY,
+      { width: usableWidth, align: "center" }
+    );
+    doc.text(
+      `Page ${i - range.start + 1} / ${range.count} — © ${new Date().getFullYear()} Reglo+`,
+      doc.page.margins.left,
+      bottomY + 10,
+      { width: usableWidth, align: "center" }
+    );
+
+    doc.page.margins.bottom = originalBottomMargin;
+  }
+};
+
 const generateReportPDF = ({ nom, score, niveau, answersById, questions }) =>
   new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: "A4", margin: 45 });
+      const doc = new PDFDocument({ size: "A4", margin: 45, bufferPages: true });
       const chunks = [];
       doc.on("data", (chunk) => chunks.push(chunk));
       doc.on("end", () => resolve(Buffer.concat(chunks)));
       doc.on("error", reject);
 
       const currentDate = moment().format("DD/MM/YYYY à HH:mm");
-      const niveauColor = niveauColorFor(niveau);
+      const nonConformGroupes = computeNonConformGroupes(questions, answersById);
+      const recommendedServices = nonConformGroupes.map((g) => SERVICES_BY_GROUPE[g]).filter(Boolean);
 
-      // Header
-      doc.fontSize(18).fillColor("#2563eb").font("Helvetica-Bold")
-        .text("Rapport de conformité — Reglo+", { align: "center" });
-      doc.fontSize(10).fillColor("#666666").font("Helvetica")
-        .text("Autorisation d'exploitation, taxes environnementales & délégué à l'environnement", { align: "center" });
-      if (nom) doc.text(`Établissement : ${nom}`, { align: "center" });
-      doc.text(`Généré le ${currentDate}`, { align: "center" });
-      doc.moveDown(1);
-
-      // Score box
-      doc.fontSize(34).fillColor(niveauColor).font("Helvetica-Bold")
-        .text(`${score}%`, { align: "center" });
-      doc.fontSize(14).fillColor(niveauColor).font("Helvetica-Bold")
-        .text(niveau, { align: "center" });
-      doc.moveDown(1);
-      doc.moveTo(doc.page.margins.left, doc.y)
-        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
-        .strokeColor("#e2e8f0").stroke();
-      doc.moveDown(1);
+      drawBrandHeader(doc, { nom, currentDate });
+      drawExecutiveSummary(doc, { score, niveau, recommendedServices });
 
       // Questions grouped by groupe
       let currentGroupe = null;
@@ -181,31 +291,27 @@ const generateReportPDF = ({ nom, score, niveau, answersById, questions }) =>
         if (q.groupe !== currentGroupe) {
           currentGroupe = q.groupe;
           doc.moveDown(0.5);
-          doc.fontSize(12).fillColor("#2563eb").font("Helvetica-Bold").text(currentGroupe.toUpperCase());
+          doc.fontSize(12).fillColor(BRAND_BLUE).font("Helvetica-Bold").text(currentGroupe.toUpperCase());
           doc.moveDown(0.2);
         }
         const reponse = answersById[q.id];
         doc.fontSize(10).fillColor("#0f172a").font("Helvetica-Bold").text(q.texte);
         doc.fontSize(8.5).fillColor("#64748b").font("Helvetica").text(q.ref);
-        doc.fontSize(10).fillColor(REPONSE_COLOR[reponse] || "#64748b").font("Helvetica-Bold")
-          .text(`Réponse : ${REPONSE_LABEL[reponse] || "N/A"}`);
-        doc.moveDown(0.6);
+        doc.moveDown(0.3);
+        drawReponsePill(doc, reponse);
       });
 
       // Recommendations
-      const nonConformGroupes = computeNonConformGroupes(questions, answersById);
-      const recommendedServices = nonConformGroupes.map((g) => SERVICES_BY_GROUPE[g]).filter(Boolean);
-
       if (recommendedServices.length) {
         doc.moveDown(0.5);
-        doc.fontSize(13).fillColor("#1d4ed8").font("Helvetica-Bold")
+        doc.fontSize(13).fillColor(BRAND_BLUE).font("Helvetica-Bold")
           .text("Nos recommandations pour vous mettre en conformité");
         doc.moveDown(0.3);
         recommendedServices.forEach((s) => drawServiceItem(doc, s));
       }
 
       doc.moveDown(0.5);
-      doc.fontSize(13).fillColor("#1d4ed8").font("Helvetica-Bold")
+      doc.fontSize(13).fillColor(BRAND_BLUE).font("Helvetica-Bold")
         .text("D'autres vérifications réglementaires à ne pas négliger");
       doc.moveDown(0.3);
       doc.fontSize(10).fillColor("#334155").font("Helvetica").text(
@@ -223,14 +329,7 @@ const generateReportPDF = ({ nom, score, niveau, answersById, questions }) =>
         { font: "Helvetica" }
       );
 
-      // Footer
-      doc.moveDown(1.5);
-      doc.fontSize(8).fillColor("#94a3b8").font("Helvetica").text(
-        "Ce rapport est une auto-évaluation basée sur vos réponses et ne remplace pas un audit réglementaire complet réalisé par Reglo+.",
-        { align: "center" }
-      );
-      doc.text(`© ${new Date().getFullYear()} Reglo+ - Tous droits réservés`, { align: "center" });
-
+      drawFooters(doc);
       doc.end();
     } catch (err) {
       reject(err);
