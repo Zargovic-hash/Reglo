@@ -1,7 +1,13 @@
 // routes/leads.js
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { createLeadAuditEnvironnement, getQuestionsAuditEnvironnement } from "../controllers/leadController.js";
+import {
+  createLeadAuditEnvironnement,
+  getQuestionsAuditEnvironnement,
+  getLeads,
+  downloadLeadReport,
+} from "../controllers/leadController.js";
+import { authenticateToken, requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -18,5 +24,7 @@ const leadsLimiter = rateLimit({
 
 router.get("/questions-audit-environnement", leadsLimiter, getQuestionsAuditEnvironnement);
 router.post("/audit-environnement", leadsLimiter, createLeadAuditEnvironnement);
+router.get("/:id/report.pdf", leadsLimiter, downloadLeadReport);
+router.get("/", authenticateToken, requireAdmin, getLeads);
 
 export default router;

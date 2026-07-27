@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reglo+ — Administration des leads</title>
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+  <div id="login-view" class="login-wrap">
+    <form id="login-form" class="login-card">
+      <div class="logo">Reglo<span>+</span> <small>Admin</small></div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="username" />
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" required autocomplete="current-password" />
+      </div>
+      <div id="login-error" class="login-error hidden"></div>
+      <button type="submit" class="btn btn-primary btn-full">Se connecter</button>
+    </form>
+  </div>
+
+  <div id="app-view" class="app-wrap hidden">
+    <header class="app-header">
+      <div class="logo">Reglo<span>+</span> <small>Admin</small></div>
+      <div class="header-actions">
+        <span id="user-email" class="user-email"></span>
+        <button id="logout-btn" class="btn btn-outline btn-sm">Déconnexion</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <h1>Leads — Audit environnemental</h1>
+      <p id="leads-count" class="leads-count"></p>
+
+      <div class="table-wrap">
+        <table id="leads-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Nom / Société</th>
+              <th>Téléphone</th>
+              <th>Email</th>
+              <th>Score</th>
+              <th>Niveau</th>
+              <th>Rapport</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody">
+            <tr><td colspan="7" class="loading">Chargement...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

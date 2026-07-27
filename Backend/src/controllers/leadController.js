@@ -313,3 +313,56 @@ export const createLeadAuditEnvironnement = async (req, res) => {
     res.status(500).json({ error: "Erreur lors du traitement de votre demande." });
   }
 };
+
+// ============================
+// 📋 LISTE DES LEADS (admin uniquement — panneau d'administration)
+// ============================
+export const getLeads = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, nom, telephone, email, score, niveau, created_at
+       FROM leads_audit_environnement
+       ORDER BY created_at DESC`
+    );
+    res.json({ leads: rows });
+  } catch (err) {
+    console.error("❌ Erreur getLeads:", err.message);
+    res.status(500).json({ error: "Impossible de charger les leads." });
+  }
+};
+
+// ============================
+// 📄 TÉLÉCHARGEMENT DU RAPPORT PDF D'UN LEAD (regénéré à la demande)
+// ============================
+export const downloadLeadReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT nom, score, niveau, reponses FROM leads_audit_environnement WHERE id = $1`,
+      [id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Rapport introuvable." });
+    }
+
+    const lead = rows[0];
+    const reponses = typeof lead.reponses === "string" ? JSON.parse(lead.reponses) : lead.reponses;
+    const answersById = Object.fromEntries(reponses.map((r) => [r.questionId, r.reponse]));
+    const questions = await fetchQuestions();
+
+    const pdfBuffer = await generateReportPDF({
+      nom: lead.nom,
+      score: lead.score,
+      niveau: lead.niveau,
+      answersById,
+      questions,
+    });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="rapport_conformite_reglo_plus_${id}.pdf"`);
+    res.end(pdfBuffer);
+  } catch (err) {
+    console.error("❌ Erreur downloadLeadReport:", err.message);
+    res.status(500).json({ error: "Impossible de générer le rapport PDF." });
+  }
+};

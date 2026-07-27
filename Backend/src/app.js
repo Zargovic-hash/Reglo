@@ -20,6 +20,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ================================
 // VÉRIFICATIONS DES VARIABLES D'ENVIRONNEMENT
@@ -171,6 +172,11 @@ app.use("/api/audit", auditRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/leads", leadRoutes);
+
+// ================================
+// PANNEAU D'ADMINISTRATION DES LEADS (site statique servi par ce backend)
+// ================================
+app.use("/admin", express.static(path.join(__dirname, "public/admin")));
 
 app.get("/", (req, res) => {
   res.json({
