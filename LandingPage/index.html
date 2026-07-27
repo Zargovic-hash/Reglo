@@ -21,11 +21,69 @@
       <span class="badge">Autorisations & gouvernance environnementale</span>
       <h1>Votre établissement est-il en règle sur ses autorisations d'exploitation et ses taxes environnementales ?</h1>
       <p class="hero-sub">
-        Répondez à 16 questions basées sur la réglementation EHS algérienne en vigueur.
+        Répondez à notre questionnaire basé sur la réglementation EHS algérienne en vigueur.
         Recevez immédiatement votre niveau de conformité, et un rapport PDF détaillé par email.
       </p>
       <a href="#quiz" class="btn btn-primary btn-lg">Démarrer mon audit gratuit</a>
       <p class="hero-trust">Gratuit · 3 minutes · Rapport PDF envoyé automatiquement par email</p>
+    </div>
+  </section>
+
+  <section id="quiz" class="quiz-section">
+    <div class="container">
+
+      <div id="step-quiz" class="card">
+        <div class="progress-wrap">
+          <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+          <span id="progress-label" class="progress-label">Chargement…</span>
+        </div>
+
+        <div id="question-groups"></div>
+
+        <div class="quiz-nav">
+          <button id="btn-prev" class="btn btn-outline" disabled>Précédent</button>
+          <button id="btn-next" class="btn btn-primary">Suivant</button>
+        </div>
+      </div>
+
+      <div id="step-gate" class="card hidden">
+        <h2>Presque terminé !</h2>
+        <p class="gate-sub">Indiquez vos coordonnées pour recevoir votre résultat détaillé et votre rapport PDF de conformité par email.</p>
+
+        <form id="lead-form" novalidate>
+          <div class="field">
+            <label for="nom">Nom / Société</label>
+            <input type="text" id="nom" name="nom" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="telephone">Téléphone <span class="required">*</span></label>
+            <input type="tel" id="telephone" name="telephone" required autocomplete="tel" placeholder="0555 12 34 56" />
+            <span class="error-msg" id="err-telephone"></span>
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" required autocomplete="email" placeholder="vous@entreprise.com" />
+            <span class="error-msg" id="err-email"></span>
+          </div>
+
+          <div id="submit-error" class="submit-error hidden"></div>
+
+          <button type="submit" id="btn-submit" class="btn btn-primary btn-lg btn-full">
+            Recevoir mon rapport de conformité
+          </button>
+          <p class="privacy-note">Vos données ne sont utilisées que pour vous transmettre votre rapport. Aucun spam.</p>
+        </form>
+      </div>
+
+      <div id="step-done" class="card hidden">
+        <div class="done-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2 id="done-title">Merci !</h2>
+        <p id="done-score"></p>
+        <p class="done-sub">Votre rapport PDF détaillé vient d'être envoyé à votre adresse email. Pensez à vérifier vos spams si vous ne le voyez pas d'ici quelques minutes.</p>
+      </div>
+
     </div>
   </section>
 
@@ -65,7 +123,7 @@
         <div class="how-step">
           <div class="how-num">1</div>
           <h3>Répondez au quiz</h3>
-          <p>16 questions ciblées sur vos autorisations et taxes environnementales, 3 minutes chrono.</p>
+          <p>Questions ciblées sur vos autorisations et taxes environnementales, 3 minutes chrono.</p>
         </div>
         <div class="how-step">
           <div class="how-num">2</div>
@@ -144,71 +202,13 @@
     </div>
   </section>
 
-  <section id="quiz" class="quiz-section">
-    <div class="container">
-
-      <div id="step-quiz" class="card">
-        <div class="progress-wrap">
-          <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
-          <span id="progress-label" class="progress-label">Question 1 / 16</span>
-        </div>
-
-        <div id="question-groups"></div>
-
-        <div class="quiz-nav">
-          <button id="btn-prev" class="btn btn-outline" disabled>Précédent</button>
-          <button id="btn-next" class="btn btn-primary">Suivant</button>
-        </div>
-      </div>
-
-      <div id="step-gate" class="card hidden">
-        <h2>Presque terminé !</h2>
-        <p class="gate-sub">Indiquez vos coordonnées pour recevoir votre résultat détaillé et votre rapport PDF de conformité par email.</p>
-
-        <form id="lead-form" novalidate>
-          <div class="field">
-            <label for="nom">Nom / Société</label>
-            <input type="text" id="nom" name="nom" autocomplete="name" />
-          </div>
-          <div class="field">
-            <label for="telephone">Téléphone <span class="required">*</span></label>
-            <input type="tel" id="telephone" name="telephone" required autocomplete="tel" placeholder="0555 12 34 56" />
-            <span class="error-msg" id="err-telephone"></span>
-          </div>
-          <div class="field">
-            <label for="email">Email <span class="required">*</span></label>
-            <input type="email" id="email" name="email" required autocomplete="email" placeholder="vous@entreprise.com" />
-            <span class="error-msg" id="err-email"></span>
-          </div>
-
-          <div id="submit-error" class="submit-error hidden"></div>
-
-          <button type="submit" id="btn-submit" class="btn btn-primary btn-lg btn-full">
-            Recevoir mon rapport de conformité
-          </button>
-          <p class="privacy-note">Vos données ne sont utilisées que pour vous transmettre votre rapport. Aucun spam.</p>
-        </form>
-      </div>
-
-      <div id="step-done" class="card hidden">
-        <div class="done-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <h2 id="done-title">Merci !</h2>
-        <p id="done-score"></p>
-        <p class="done-sub">Votre rapport PDF détaillé vient d'être envoyé à votre adresse email. Pensez à vérifier vos spams si vous ne le voyez pas d'ici quelques minutes.</p>
-      </div>
-
-    </div>
-  </section>
-
   <section class="faq-section">
     <div class="container">
       <h2 class="section-title">Questions fréquentes</h2>
       <div class="faq-list">
         <details class="faq-item">
           <summary>Le test est-il vraiment gratuit ?</summary>
-          <p>Oui, le quiz de 16 questions et votre rapport PDF de conformité sont entièrement gratuits, sans engagement.</p>
+          <p>Oui, le quiz et votre rapport PDF de conformité sont entièrement gratuits, sans engagement.</p>
         </details>
         <details class="faq-item">
           <summary>Qui a créé cet outil ?</summary>
