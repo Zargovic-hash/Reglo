@@ -1,4 +1,5 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import nodemailer from "nodemailer";
 import moment from "moment";
 import { pool } from "../db.js";
@@ -278,7 +279,9 @@ const generateReportPDF = async (lead) => {
   try {
     browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      defaultViewport: chromium.defaultViewport,
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "domcontentloaded" });
