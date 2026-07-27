@@ -1,5 +1,4 @@
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
 import moment from "moment";
 import { pool } from "../db.js";
@@ -159,141 +158,113 @@ const computeScore = (reponses, questions) => {
 };
 
 // ============================
-// 🎨 HTML DU RAPPORT PDF
+// 📄 GÉNÉRATION DU RAPPORT PDF (pdfkit — pas de navigateur, léger en mémoire)
 // ============================
-const buildReportHTML = ({ nom, score, niveau, answersById, questions }) => {
-  const currentDate = moment().format("DD/MM/YYYY à HH:mm");
-  const niveauColor = niveau === "Conforme" ? "#22c55e" : niveau === "Partiellement conforme" ? "#f59e0b" : "#ef4444";
-  const reponseLabel = { oui: "Oui", non: "Non", non_applicable: "Non applicable" };
+const REPONSE_LABEL = { oui: "Oui", non: "Non", non_applicable: "Non applicable" };
+const REPONSE_COLOR = { oui: "#16a34a", non: "#dc2626", non_applicable: "#64748b" };
 
-  const nonConformGroupes = computeNonConformGroupes(questions, answersById);
-  const recommendedServices = nonConformGroupes
-    .map((groupe) => SERVICES_BY_GROUPE[groupe])
-    .filter(Boolean);
+const niveauColorFor = (niveau) =>
+  niveau === "Conforme" ? "#16a34a" : niveau === "Partiellement conforme" ? "#d97706" : "#dc2626";
 
-  const serviceItemHTML = (s) => `
-    <div class="reco-item">
-      <strong>${s.label}</strong>
-      <p>${s.description}</p>
-    </div>
-  `;
-
-  const recoSectionHTML = recommendedServices.length
-    ? `
-      <div class="reco-section">
-        <h2>Nos recommandations pour vous mettre en conformité</h2>
-        ${recommendedServices.map(serviceItemHTML).join("")}
-      </div>
-    `
-    : "";
-
-  const otherSectionHTML = `
-    <div class="reco-section other-section">
-      <h2>D'autres vérifications réglementaires à ne pas négliger</h2>
-      <p>
-        Ce test couvre uniquement les autorisations d'exploitation et les taxes environnementales.
-        Notre base de données réglementaire couvre bien d'autres domaines (air, eau, déchets, produits
-        chimiques, sécurité, santé au travail...) sur lesquels votre établissement peut également être exposé.
-      </p>
-      ${AUTRES_ETUDES.map(serviceItemHTML).join("")}
-      <p class="platform-note">
-        <strong>Notre bureau peut vous accompagner</strong> sur l'ensemble de ces démarches, et vous donner accès
-        à la plateforme Reglo+ : une base de données réglementaire complète ainsi qu'un outil de planification et
-        de suivi de vos actions correctives.
-      </p>
-    </div>
-  `;
-
-  const rows = questions.map((q) => {
-    const reponse = answersById[q.id];
-    return `
-      <tr>
-        <td>${q.groupe}</td>
-        <td>${q.texte}</td>
-        <td>${q.ref}</td>
-        <td style="text-align:center;font-weight:bold;">${reponseLabel[reponse] || "N/A"}</td>
-      </tr>
-    `;
-  }).join("");
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Rapport de conformité Reglo+</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; line-height: 1.6; }
-        .header { text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; }
-        .header h1 { color: #3b82f6; margin: 0; font-size: 24px; }
-        .header p { color: #666; margin: 5px 0 0 0; font-size: 14px; }
-        .score-box { text-align: center; margin-bottom: 30px; }
-        .score-value { font-size: 42px; font-weight: bold; color: ${niveauColor}; }
-        .score-label { font-size: 18px; font-weight: bold; color: ${niveauColor}; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; }
-        th, td { border: 1px solid #dee2e6; padding: 6px; text-align: left; vertical-align: top; }
-        th { background: #3b82f6; color: white; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #dee2e6; padding-top: 10px; }
-        .reco-section { margin-top: 30px; padding: 18px 20px; border: 1px solid #dee2e6; border-radius: 8px; background: #f8f9fa; page-break-inside: avoid; }
-        .reco-section h2 { font-size: 16px; color: #1d4ed8; margin: 0 0 10px; }
-        .reco-section p { font-size: 12px; margin: 0 0 12px; }
-        .reco-item { margin-bottom: 10px; }
-        .reco-item strong { font-size: 13px; color: #1e293b; }
-        .reco-item p { font-size: 12px; color: #475569; margin: 2px 0 0; }
-        .other-section { background: #eff6ff; }
-        .platform-note { margin-top: 14px; font-size: 12px; color: #1e293b; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>Rapport de conformité — Autorisation & Taxes environnementales</h1>
-        <p>${nom ? `Établissement : ${nom}` : ""}</p>
-        <p>Généré le ${currentDate}</p>
-        <p>Reglo+ - Système d'Audit Réglementaire</p>
-      </div>
-      <div class="score-box">
-        <div class="score-value">${score}%</div>
-        <div class="score-label">${niveau}</div>
-      </div>
-      <table>
-        <thead>
-          <tr><th>Titre</th><th>Exigence</th><th>Référence réglementaire</th><th>Réponse</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      ${recoSectionHTML}
-      ${otherSectionHTML}
-      <div class="footer">
-        <p>Ce rapport est une auto-évaluation basée sur vos réponses et ne remplace pas un audit réglementaire complet réalisé par Reglo+.</p>
-        <p>© ${new Date().getFullYear()} Reglo+ - Tous droits réservés</p>
-      </div>
-    </body>
-    </html>
-  `;
+const drawServiceItem = (doc, service) => {
+  doc.fontSize(11).fillColor("#1e293b").font("Helvetica-Bold").text(service.label, { continued: false });
+  doc.fontSize(10).fillColor("#475569").font("Helvetica").text(service.description);
+  doc.moveDown(0.5);
 };
 
-const generateReportPDF = async (lead) => {
-  const html = buildReportHTML(lead);
-  let browser = null;
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: chromium.args,
-      executablePath: await chromium.executablePath(),
-      defaultViewport: chromium.defaultViewport,
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "domcontentloaded" });
-    return await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "20mm", right: "15mm", bottom: "20mm", left: "15mm" },
-    });
-  } finally {
-    if (browser) await browser.close();
-  }
-};
+const generateReportPDF = ({ nom, score, niveau, answersById, questions }) =>
+  new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: "A4", margin: 45 });
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.on("error", reject);
+
+      const currentDate = moment().format("DD/MM/YYYY à HH:mm");
+      const niveauColor = niveauColorFor(niveau);
+
+      // Header
+      doc.fontSize(18).fillColor("#2563eb").font("Helvetica-Bold")
+        .text("Rapport de conformité — Reglo+", { align: "center" });
+      doc.fontSize(10).fillColor("#666666").font("Helvetica")
+        .text("Autorisation d'exploitation, taxes environnementales & délégué à l'environnement", { align: "center" });
+      if (nom) doc.text(`Établissement : ${nom}`, { align: "center" });
+      doc.text(`Généré le ${currentDate}`, { align: "center" });
+      doc.moveDown(1);
+
+      // Score box
+      doc.fontSize(34).fillColor(niveauColor).font("Helvetica-Bold")
+        .text(`${score}%`, { align: "center" });
+      doc.fontSize(14).fillColor(niveauColor).font("Helvetica-Bold")
+        .text(niveau, { align: "center" });
+      doc.moveDown(1);
+      doc.moveTo(doc.page.margins.left, doc.y)
+        .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+        .strokeColor("#e2e8f0").stroke();
+      doc.moveDown(1);
+
+      // Questions grouped by groupe
+      let currentGroupe = null;
+      questions.forEach((q) => {
+        if (q.groupe !== currentGroupe) {
+          currentGroupe = q.groupe;
+          doc.moveDown(0.5);
+          doc.fontSize(12).fillColor("#2563eb").font("Helvetica-Bold").text(currentGroupe.toUpperCase());
+          doc.moveDown(0.2);
+        }
+        const reponse = answersById[q.id];
+        doc.fontSize(10).fillColor("#0f172a").font("Helvetica-Bold").text(q.texte);
+        doc.fontSize(8.5).fillColor("#64748b").font("Helvetica").text(q.ref);
+        doc.fontSize(10).fillColor(REPONSE_COLOR[reponse] || "#64748b").font("Helvetica-Bold")
+          .text(`Réponse : ${REPONSE_LABEL[reponse] || "N/A"}`);
+        doc.moveDown(0.6);
+      });
+
+      // Recommendations
+      const nonConformGroupes = computeNonConformGroupes(questions, answersById);
+      const recommendedServices = nonConformGroupes.map((g) => SERVICES_BY_GROUPE[g]).filter(Boolean);
+
+      if (recommendedServices.length) {
+        doc.moveDown(0.5);
+        doc.fontSize(13).fillColor("#1d4ed8").font("Helvetica-Bold")
+          .text("Nos recommandations pour vous mettre en conformité");
+        doc.moveDown(0.3);
+        recommendedServices.forEach((s) => drawServiceItem(doc, s));
+      }
+
+      doc.moveDown(0.5);
+      doc.fontSize(13).fillColor("#1d4ed8").font("Helvetica-Bold")
+        .text("D'autres vérifications réglementaires à ne pas négliger");
+      doc.moveDown(0.3);
+      doc.fontSize(10).fillColor("#334155").font("Helvetica").text(
+        "Ce test couvre uniquement les autorisations d'exploitation, les taxes environnementales et le délégué " +
+        "à l'environnement. Notre base de données réglementaire couvre bien d'autres domaines (air, eau, déchets, " +
+        "produits chimiques, sécurité, santé au travail...) sur lesquels votre établissement peut également être exposé."
+      );
+      doc.moveDown(0.4);
+      AUTRES_ETUDES.forEach((s) => drawServiceItem(doc, s));
+
+      doc.fontSize(10).fillColor("#0f172a").font("Helvetica-Bold").text(
+        "Notre bureau peut vous accompagner sur l'ensemble de ces démarches, et vous donner accès à la " +
+        "plateforme Reglo+ : une base de données réglementaire complète ainsi qu'un outil de planification et " +
+        "de suivi de vos actions correctives.",
+        { font: "Helvetica" }
+      );
+
+      // Footer
+      doc.moveDown(1.5);
+      doc.fontSize(8).fillColor("#94a3b8").font("Helvetica").text(
+        "Ce rapport est une auto-évaluation basée sur vos réponses et ne remplace pas un audit réglementaire complet réalisé par Reglo+.",
+        { align: "center" }
+      );
+      doc.text(`© ${new Date().getFullYear()} Reglo+ - Tous droits réservés`, { align: "center" });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
 
 // ============================
 // 📋 LISTE DES QUESTIONS (route publique, consommée par la landing page)

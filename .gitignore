@@ -20,3 +20,6 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Base documentaire réglementaire (PDF/Excel volumineux, non versionnés)
+database/
