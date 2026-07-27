@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reglo+ — Testez votre conformité Autorisation & Taxes environnementales</title>
+  <meta name="description" content="Mesurez en 3 minutes votre niveau de conformité réglementaire sur les autorisations d'exploitation et taxes environnementales, et recevez votre rapport PDF gratuit." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <div class="logo">Reglo<span>+</span></div>
+      <a href="#quiz" class="btn btn-outline btn-sm">Faire le test</a>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container hero-inner">
+      <span class="badge">Autorisations & gouvernance environnementale</span>
+      <h1>Votre établissement est-il en règle sur ses autorisations d'exploitation et ses taxes environnementales ?</h1>
+      <p class="hero-sub">
+        Répondez à 16 questions basées sur la réglementation EHS algérienne en vigueur.
+        Recevez immédiatement votre niveau de conformité, et un rapport PDF détaillé par email.
+      </p>
+      <a href="#quiz" class="btn btn-primary btn-lg">Démarrer mon audit gratuit</a>
+      <p class="hero-trust">Gratuit · 3 minutes · Rapport PDF envoyé automatiquement par email</p>
+    </div>
+  </section>
+
+  <section class="risk-section">
+    <div class="container">
+      <h2 class="section-title">Ce que vous risquez en cas de non-conformité</h2>
+      <div class="risk-grid">
+        <div class="risk-card">
+          <div class="risk-icon">⚠️</div>
+          <h3>Sanctions administratives</h3>
+          <p>Mise en demeure, suspension ou retrait de l'autorisation d'exploiter par la Direction de l'Environnement de wilaya.</p>
+        </div>
+        <div class="risk-card">
+          <div class="risk-icon">💸</div>
+          <h3>Amendes et redressement fiscal</h3>
+          <p>Taxes environnementales non déclarées ou mal calculées : pénalités de retard et rappels pouvant peser lourd sur votre trésorerie.</p>
+        </div>
+        <div class="risk-card">
+          <div class="risk-icon">🏭</div>
+          <h3>Blocage de l'activité</h3>
+          <p>Fermeture temporaire du site en cas de contrôle défavorable, avec impact direct sur votre production et vos clients.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-section">
+    <div class="container">
+      <h2 class="section-title">Comment ça marche</h2>
+      <div class="how-grid">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <h3>Répondez au quiz</h3>
+          <p>16 questions ciblées sur vos autorisations et taxes environnementales, 3 minutes chrono.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <h3>Obtenez votre score</h3>
+          <p>Un niveau de conformité instantané, calculé selon la réglementation EHS algérienne en vigueur.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <h3>Recevez votre rapport PDF</h3>
+          <p>Un rapport détaillé par email avec vos points de vigilance et actions prioritaires.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="trust-section">
+    <div class="container">
+      <p class="trust-line">Conçu pour les industriels et PME algériens soumis aux obligations EHS (Direction de l'Environnement de wilaya, taxes TAP environnementales, autorisations ANDI).</p>
+    </div>
+  </section>
+
+  <section id="quiz" class="quiz-section">
+    <div class="container">
+
+      <div id="step-quiz" class="card">
+        <div class="progress-wrap">
+          <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
+          <span id="progress-label" class="progress-label">Question 1 / 16</span>
+        </div>
+
+        <div id="question-groups"></div>
+
+        <div class="quiz-nav">
+          <button id="btn-prev" class="btn btn-outline" disabled>Précédent</button>
+          <button id="btn-next" class="btn btn-primary">Suivant</button>
+        </div>
+      </div>
+
+      <div id="step-gate" class="card hidden">
+        <h2>Presque terminé !</h2>
+        <p class="gate-sub">Indiquez vos coordonnées pour recevoir votre résultat détaillé et votre rapport PDF de conformité par email.</p>
+
+        <form id="lead-form" novalidate>
+          <div class="field">
+            <label for="nom">Nom / Société</label>
+            <input type="text" id="nom" name="nom" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="telephone">Téléphone <span class="required">*</span></label>
+            <input type="tel" id="telephone" name="telephone" required autocomplete="tel" placeholder="0555 12 34 56" />
+            <span class="error-msg" id="err-telephone"></span>
+          </div>
+          <div class="field">
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" required autocomplete="email" placeholder="vous@entreprise.com" />
+            <span class="error-msg" id="err-email"></span>
+          </div>
+
+          <div id="submit-error" class="submit-error hidden"></div>
+
+          <button type="submit" id="btn-submit" class="btn btn-primary btn-lg btn-full">
+            Recevoir mon rapport de conformité
+          </button>
+          <p class="privacy-note">Vos données ne sont utilisées que pour vous transmettre votre rapport. Aucun spam.</p>
+        </form>
+      </div>
+
+      <div id="step-done" class="card hidden">
+        <div class="done-icon">✓</div>
+        <h2 id="done-title">Merci !</h2>
+        <p id="done-score"></p>
+        <p class="done-sub">Votre rapport PDF détaillé vient d'être envoyé à votre adresse email. Pensez à vérifier vos spams si vous ne le voyez pas d'ici quelques minutes.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="faq-section">
+    <div class="container">
+      <h2 class="section-title">Questions fréquentes</h2>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>Le test est-il vraiment gratuit ?</summary>
+          <p>Oui, le quiz de 16 questions et votre rapport PDF de conformité sont entièrement gratuits, sans engagement.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Qui a créé cet outil ?</summary>
+          <p>Reglo+ est un outil d'audit et de conformité réglementaire EHS conçu à partir de la réglementation algérienne en vigueur sur les autorisations d'exploitation et les taxes environnementales.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Mes données sont-elles partagées avec un tiers ?</summary>
+          <p>Non. Vos coordonnées ne servent qu'à vous transmettre votre rapport de conformité et, si vous le souhaitez, à être recontacté par un expert. Aucun spam, aucune revente de données.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Que contient le rapport PDF ?</summary>
+          <p>Votre score de conformité global, le détail par catégorie (autorisations, taxes environnementales) et vos principaux points de vigilance à corriger en priorité.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>Reglo+ — Système d'audit et de conformité réglementaire EHS. Basé sur la réglementation algérienne en vigueur.</p>
+      <p class="footer-contact">
+        Une question ? <a href="mailto:echaouiseifeddine@outlook.com">contact@reglo-plus.dz</a> ·
+        <a href="https://wa.me/213557038900" target="_blank" rel="noopener">WhatsApp</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

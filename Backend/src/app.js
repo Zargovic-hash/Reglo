@@ -10,6 +10,7 @@ import dashboardRoutes from "./routes/dashboard.js";
 import authRoutes from "./routes/auth.js";
 import usersRoutes from "./routes/users.js";
 import reportRoutes from "./routes/reports.js";
+import leadRoutes from "./routes/leads.js";
 import { pool } from "./db.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -60,6 +61,7 @@ app.use("/api/", limiter);
 // ================================
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  "https://reglo-landing.onrender.com",
   "https://safenext-1.onrender.com",
   "https://safenext-1.onrender.com/recap",
   "https://safenext-1.onrender.com/reglementation",
@@ -168,6 +170,7 @@ app.use("/api/reglementation", reglementationRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/leads", leadRoutes);
 
 app.get("/", (req, res) => {
   res.json({
@@ -190,6 +193,7 @@ app.get("/", (req, res) => {
       audit: "/api/audit",
       dashboard: "/api/dashboard",
       reports: "/api/reports",
+      leads: "/api/leads",
       health: "/health",
       status: "/api/status",
     },

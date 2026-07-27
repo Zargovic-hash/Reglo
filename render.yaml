@@ -1,0 +1,40 @@
+services:
+  # ---- Backend API (Node/Express) ----
+  - type: web
+    name: reglo-backend
+    runtime: node
+    plan: free
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FROM_EMAIL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  # ---- Landing page (site statique) ----
+  - type: web
+    name: reglo-landing
+    runtime: static
+    rootDir: LandingPage
+    staticPublishPath: .
+    buildCommand: ""
