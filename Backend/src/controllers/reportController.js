@@ -1,6 +1,7 @@
 // controllers/reportController.js
 import { pool } from "../db.js";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import ExcelJS from "exceljs";
 import moment from "moment";
 
@@ -36,7 +37,9 @@ export const generatePDFReport = async (req, res) => {
 
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      defaultViewport: chromium.defaultViewport,
     });
 
     const page = await browser.newPage();
