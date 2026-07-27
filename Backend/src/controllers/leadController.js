@@ -1,7 +1,6 @@
 import PDFDocument from "pdfkit";
 import moment from "moment";
 import { pool } from "../db.js";
-import { sendEmail } from "../utils/mailer.js";
 
 // ============================
 // 📋 EXIGENCES RÉELLES — chargées dynamiquement depuis reglementation_all
@@ -252,7 +251,7 @@ export const getQuestionsAuditEnvironnement = async (req, res) => {
 };
 
 // ============================
-// 📥 CRÉATION D'UN LEAD + ENVOI AUTOMATIQUE DU RAPPORT
+// 📥 CRÉATION D'UN LEAD (le rapport PDF est téléchargé directement, pas d'email)
 // ============================
 export const createLeadAuditEnvironnement = async (req, res) => {
   try {
@@ -266,7 +265,7 @@ export const createLeadAuditEnvironnement = async (req, res) => {
       return res.status(400).json({ error: validationError });
     }
 
-    const { score, niveau, answersById } = computeScore(reponses, questions);
+    const { score, niveau } = computeScore(reponses, questions);
 
     const { rows } = await pool.query(
       `INSERT INTO leads_audit_environnement (nom, telephone, email, score, niveau, reponses)
@@ -276,37 +275,7 @@ export const createLeadAuditEnvironnement = async (req, res) => {
     );
     const leadId = rows[0].id;
 
-    let emailSent = false;
-    try {
-      const pdfBuffer = await generateReportPDF({ nom, score, niveau, answersById, questions });
-
-      await sendEmail(
-        email.trim(),
-        "Votre rapport de conformité Reglo+",
-        `
-          <p>Bonjour${nom ? ` ${nom}` : ""},</p>
-          <p>Merci d'avoir réalisé votre audit de conformité "Autorisation & gouvernance environnementale" avec Reglo+.</p>
-          <p><strong>Votre niveau de conformité : ${niveau} (${score}%)</strong></p>
-          <p>Vous trouverez le détail de votre audit dans le rapport PDF ci-joint, ainsi que nos recommandations
-          personnalisées et les autres vérifications réglementaires à ne pas négliger.</p>
-          <p>Notre bureau peut vous accompagner dans la préparation de vos études de mise en conformité
-          (autorisation d'exploitation, audit environnemental, étude de danger, produits dangereux) et vous donner
-          accès à la plateforme Reglo+ pour suivre vos actions correctives. Répondez à cet email pour en discuter.</p>
-          <p>L'équipe Reglo+</p>
-        `,
-        [
-          {
-            filename: `rapport_conformite_reglo_plus_${moment().format("YYYY-MM-DD")}.pdf`,
-            content: pdfBuffer,
-          },
-        ]
-      );
-      emailSent = true;
-    } catch (emailError) {
-      console.error("❌ Erreur envoi email rapport de conformité:", emailError.message);
-    }
-
-    res.status(201).json({ success: true, leadId, emailSent });
+    res.status(201).json({ success: true, leadId });
   } catch (err) {
     console.error("❌ Erreur createLeadAuditEnvironnement:", err.message);
     console.error("Stack trace:", err.stack);

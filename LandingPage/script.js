@@ -183,7 +183,7 @@ leadForm.addEventListener("submit", async (event) => {
   };
 
   btnSubmit.disabled = true;
-  btnSubmit.textContent = "Envoi en cours...";
+  btnSubmit.textContent = "Calcul en cours...";
 
   try {
     const response = await fetch(API_ENDPOINT, {
@@ -197,18 +197,11 @@ leadForm.addEventListener("submit", async (event) => {
       throw new Error(errorBody.error || "Une erreur est survenue, merci de réessayer.");
     }
 
-    const { leadId, emailSent } = await response.json();
+    const { leadId } = await response.json();
     const { percent, niveau } = computeScore();
     document.getElementById("done-title").textContent = `Votre niveau de conformité : ${niveau}`;
     document.getElementById("done-score").textContent = `Score estimé : ${percent}%`;
-
-    if (emailSent) {
-      document.getElementById("done-email-msg").classList.remove("hidden");
-    } else {
-      const downloadLink = document.getElementById("done-download-link");
-      downloadLink.href = `${API_BASE_URL}/api/leads/${leadId}/report.pdf`;
-      document.getElementById("done-download").classList.remove("hidden");
-    }
+    document.getElementById("done-download-link").href = `${API_BASE_URL}/api/leads/${leadId}/report.pdf`;
 
     stepGate.classList.add("hidden");
     stepDone.classList.remove("hidden");
@@ -217,7 +210,7 @@ leadForm.addEventListener("submit", async (event) => {
     submitErrorEl.classList.remove("hidden");
   } finally {
     btnSubmit.disabled = false;
-    btnSubmit.textContent = "Recevoir mon rapport de conformité";
+    btnSubmit.textContent = "Voir mon rapport de conformité";
   }
 });
 
