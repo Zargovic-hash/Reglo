@@ -239,3 +239,62 @@ async function loadQuestions() {
 }
 
 loadQuestions();
+
+// ============================
+// Scroll-reveal : les sections marquées ".reveal" apparaissent en douceur
+// à leur premier passage à l'écran (perf : on arrête d'observer après coup).
+// ============================
+if ("IntersectionObserver" in window) {
+  const revealObserver = new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("in-view");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.12 }
+  );
+  document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
+} else {
+  document.querySelectorAll(".reveal").forEach((el) => el.classList.add("in-view"));
+}
+
+// ============================
+// Barre CTA flottante (mobile) : visible une fois le hero dépassé, masquée
+// dès que le quiz ou le footer entrent dans le viewport (pour ne pas superposer le CTA final).
+// ============================
+const stickyCtaEl = document.getElementById("sticky-cta");
+if (stickyCtaEl) {
+  const heroEl = document.querySelector(".hero");
+  const quizSectionEl = document.getElementById("quiz");
+  const footerEl = document.querySelector(".site-footer");
+
+  let heroPassed = false;
+  let blockedByQuizOrFooter = false;
+
+  const syncStickyCta = () => {
+    stickyCtaEl.classList.toggle("visible", heroPassed && !blockedByQuizOrFooter);
+  };
+
+  if ("IntersectionObserver" in window && heroEl) {
+    new IntersectionObserver(
+      (entries) => {
+        heroPassed = !entries[0].isIntersecting;
+        syncStickyCta();
+      },
+      { threshold: 0 }
+    ).observe(heroEl);
+
+    const blockingObserver = new IntersectionObserver(
+      (entries) => {
+        blockedByQuizOrFooter = entries.some((entry) => entry.isIntersecting);
+        syncStickyCta();
+      },
+      { threshold: 0 }
+    );
+    if (quizSectionEl) blockingObserver.observe(quizSectionEl);
+    if (footerEl) blockingObserver.observe(footerEl);
+  }
+}

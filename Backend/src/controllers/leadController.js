@@ -37,30 +37,34 @@ const VALID_REPONSES = new Set([...Object.keys(SCORE_VALUES), "non_applicable"])
 // ============================
 const SERVICES_BY_GROUPE = {
   "Autorisation d exploitation": {
-    label: "Étude & dossier d'autorisation d'exploitation",
+    label: "Autorisation d'exploitation",
     description:
-      "Constitution et dépôt de votre dossier de demande d'autorisation d'exploitation auprès de la Direction de l'Environnement de wilaya.",
+      "Accompagnement dans le processus d'obtention de l'autorisation d'exploitation auprès de la Direction de l'Environnement de wilaya.",
   },
   "Taxes et frais environnementaux": {
     label: "Mise en conformité fiscale environnementale",
     description:
-      "Calcul et sécurisation de vos déclarations de taxes et redevances environnementales pour éviter tout redressement.",
+      "Mise en conformité fiscale environnementale grâce à notre système digital de calcul des taxes environnementales, de leur suivi et de leur optimisation.",
   },
   "Délégués pour l’environnement": {
-    label: "Désignation du délégué à l'environnement",
+    label: "Délégué à l'environnement",
     description:
       "Accompagnement pour la désignation et la déclaration de votre délégué à l'environnement conformément à la réglementation en vigueur.",
   },
 };
 
 // Études toujours proposées, indépendamment du quiz, car non couvertes par
-// ses questions actuelles (audit environnemental global, étude de danger,
-// produits dangereux).
+// ses questions actuelles.
 const AUTRES_ETUDES = [
   {
-    label: "Audit environnemental complet",
+    label: "Audit de conformité légale complet",
     description:
-      "Diagnostic complet de votre conformité sur l'ensemble des domaines EHS (air, eau, déchets, produits chimiques, sécurité...).",
+      "Audit de conformité légale complet pour assurer votre conformité sur l'ensemble des domaines réglementaires applicables à votre activité.",
+  },
+  {
+    label: "Audit environnemental",
+    description:
+      "Évaluation de vos impacts et de votre performance environnementale sur l'ensemble de votre site (air, eau, déchets, sols).",
   },
   {
     label: "Étude de danger",
@@ -68,9 +72,19 @@ const AUTRES_ETUDES = [
       "Analyse des risques industriels et des scénarios d'accidents majeurs, exigée pour les installations classées à risque.",
   },
   {
+    label: "Notice et étude d'impact",
+    description:
+      "Réalisation de la notice ou de l'étude d'impact environnemental requise avant la mise en service ou l'extension de votre installation.",
+  },
+  {
     label: "Rapport sur les produits dangereux",
     description:
       "Inventaire, classification et plan de gestion des matières et produits chimiques dangereux présents sur site.",
+  },
+  {
+    label: "Solutions digitales de traçabilité",
+    description:
+      "Des solutions comme notre plateforme CHEMI-Tracker assurent le suivi des produits réglementés conformément au décret exécutif n° 03-451, ainsi que plusieurs autres outils digitaux.",
   },
 ];
 
@@ -158,15 +172,15 @@ const buildActionPlan = (reponse, preuve) => {
   const preuveTrimmed = preuve && String(preuve).trim();
   if (reponse === "non") {
     return preuveTrimmed
-      ? `Réunir et régulariser le justificatif requis : ${preuveTrimmed}. Désigner un responsable et une échéance pour son obtention.`
-      : "Engager les démarches nécessaires pour régulariser cette exigence, en désignant un responsable et une échéance.";
+      ? `Écart à régulariser : constituer le dossier de mise en conformité et produire le justificatif suivant — ${preuveTrimmed}. Désigner un responsable QHSE et fixer une échéance ferme pour clôturer cet écart avant tout contrôle de l'autorité compétente.`
+      : "Écart à régulariser : engager sans délai les démarches de mise en conformité auprès de l'autorité compétente, en désignant un responsable QHSE et une échéance ferme de clôture.";
   }
   if (reponse === "oui") {
     return preuveTrimmed
-      ? `Vérifier que le justificatif suivant est bien disponible, à jour et archivé : ${preuveTrimmed}. À recontrôler lors du prochain audit.`
-      : "Conserver la preuve de conformité actuelle et la recontrôler lors du prochain audit périodique.";
+      ? `Point de vigilance à maintenir : s'assurer que le justificatif suivant reste disponible, à jour et archivé dans votre système documentaire — ${preuveTrimmed}. À recontrôler lors de votre prochaine revue de conformité.`
+      : "Point de vigilance à maintenir : conserver la preuve de conformité dans votre système documentaire et la soumettre à un contrôle périodique lors de votre prochaine revue de conformité.";
   }
-  return "Non applicable à votre activité actuelle — aucune action requise. À réévaluer si votre activité évolue.";
+  return "Exigence non applicable à l'activité actuelle de l'établissement — à réévaluer en cas d'évolution de l'activité ou de la nomenclature des installations classées.";
 };
 
 const drawServiceItem = (doc, service) => {
@@ -354,69 +368,132 @@ const drawRequirementsTable = (doc, questions, answersById) => {
 // ============================
 // 🗂️ APERÇU DE LA PAGE DE SUIVI DES PLANS D'ACTION (plateforme Reglo+)
 // ============================
-const TRACKING_PREVIEW_ROWS = [
-  { action: "Renouveler l'autorisation d'exploitation", priorite: "Critique", couleur: "#dc2626", echeance: "15/09/2026", responsable: "Resp. HSE" },
-  { action: "Déclarer la taxe environnementale annuelle", priorite: "Élevée", couleur: "#d97706", echeance: "30/10/2026", responsable: "Resp. Finance" },
-  { action: "Archiver le registre du délégué à l'environnement", priorite: "Normale", couleur: "#16a34a", echeance: "—", responsable: "Resp. QHSE" },
+// Fonctionnalités réellement disponibles sur le tableau de bord "Suivi & Récapitulatif" de
+// l'app Reglo+ (cf. Frontend/src/pages/RecapPage.jsx : onglets Vue d'ensemble, Plans d'action,
+// Planification/Eisenhower, Calendrier, Équipe, Échéances 30j, Non Conformes).
+const PLATFORM_FEATURES = [
+  "Vue d'ensemble : jauge de conformité globale en temps réel",
+  "Suivi des plans d'action : statut, responsable et échéance",
+  "Matrice de priorisation urgence / importance (Eisenhower)",
+  "Calendrier consolidé de toutes vos échéances",
+  "Gestion par équipe : répartition des actions par responsable",
+  "Alertes sur les échéances à 30 jours",
+  "Vue consolidée de toutes vos non-conformités",
+  "Export de vos rapports en PDF et Excel",
 ];
 
+const MATRIX_QUADRANTS = [
+  { label: "Urgent & important", sub: "Ex. 3 actions", bg: "#fee2e2", fg: "#b91c1c" },
+  { label: "Important", sub: "Ex. 5 actions", bg: "#ffedd5", fg: "#c2410c" },
+  { label: "Urgent", sub: "Ex. 2 actions", bg: "#fef9c3", fg: "#a16207" },
+  { label: "Secondaire", sub: "Ex. 1 action", bg: "#dcfce7", fg: "#15803d" },
+];
+
+// Mockup de la matrice de priorisation (urgence / importance) utilisée dans l'onglet Planification.
+const drawMatrixMockup = (doc, x, y, w, h) => {
+  doc.roundedRect(x, y, w, h, 6).fillAndStroke("#f8fafc", "#e2e8f0");
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#334155")
+    .text("Matrice de priorisation (urgence / importance)", x + 10, y + 8, { width: w - 20, lineBreak: false });
+
+  const gridTop = y + 24;
+  const halfW = (w - 20 - 6) / 2;
+  const halfH = (h - 34 - 6) / 2;
+  const positions = [
+    [x + 10, gridTop],
+    [x + 10 + halfW + 6, gridTop],
+    [x + 10, gridTop + halfH + 6],
+    [x + 10 + halfW + 6, gridTop + halfH + 6],
+  ];
+  MATRIX_QUADRANTS.forEach((q, i) => {
+    const [qx, qy] = positions[i];
+    doc.roundedRect(qx, qy, halfW, halfH, 4).fill(q.bg);
+    doc.font("Helvetica-Bold").fontSize(7.5).fillColor(q.fg)
+      .text(q.label, qx + 6, qy + 6, { width: halfW - 12, lineBreak: false });
+    doc.font("Helvetica").fontSize(7).fillColor(q.fg)
+      .text(q.sub, qx + 6, qy + halfH - 15, { width: halfW - 12, lineBreak: false });
+  });
+};
+
+// Mockup du calendrier consolidé des échéances utilisé dans l'onglet Calendrier.
+const drawCalendarMockup = (doc, x, y, w, h) => {
+  doc.roundedRect(x, y, w, h, 6).fillAndStroke("#f8fafc", "#e2e8f0");
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#334155")
+    .text("Calendrier des échéances", x + 10, y + 8, { width: w - 20, lineBreak: false });
+
+  const days = ["L", "M", "M", "J", "V", "S", "D"];
+  const gridX = x + 10;
+  const gridW = w - 20;
+  const cellW = gridW / 7;
+  const headerY = y + 24;
+  days.forEach((d, i) => {
+    doc.font("Helvetica-Bold").fontSize(6.5).fillColor("#94a3b8")
+      .text(d, gridX + i * cellW, headerY, { width: cellW, align: "center", lineBreak: false });
+  });
+
+  const rows = 3;
+  const cellsTop = headerY + 12;
+  const cellH = (h - (cellsTop - y) - 16) / rows;
+  const highlighted = new Set([2, 9, 15]);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < 7; c++) {
+      const idx = r * 7 + c;
+      const cx = gridX + c * cellW;
+      const cy = cellsTop + r * cellH;
+      doc.roundedRect(cx + 1, cy + 1, cellW - 2, cellH - 2, 2).fill(highlighted.has(idx) ? "#fecaca" : "#eef2f7");
+    }
+  }
+  doc.font("Helvetica-Oblique").fontSize(6.5).fillColor("#94a3b8")
+    .text("Exemple illustratif — vos échéances réelles s'affichent automatiquement.", gridX, cellsTop + rows * cellH + 4, {
+      width: gridW,
+      lineBreak: false,
+    });
+};
+
 const drawTrackingPreview = (doc) => {
-  ensurePageSpace(doc, 210, () => {});
+  ensurePageSpace(doc, 320, () => {});
 
   doc.fontSize(13).fillColor(BRAND_BLUE).font("Helvetica-Bold")
-    .text("Aperçu : le suivi de vos plans d'action sur la plateforme Reglo+");
+    .text("Aperçu : le pilotage de vos plans d'action sur la plateforme Reglo+");
   doc.moveDown(0.25);
   doc.fontSize(9.5).fillColor("#475569").font("Helvetica").text(
-    "Sur la plateforme complète, chaque non-conformité devient une action pilotée : priorité (matrice " +
-    "urgence / importance), échéance, responsable assigné et statut d'avancement, regroupées dans un " +
-    "tableau de bord dédié."
+    "Sur la plateforme complète, chaque non-conformité devient une action pilotée : priorisée selon " +
+    "l'urgence et l'importance, positionnée dans un calendrier d'échéances, assignée à un responsable et " +
+    "suivie jusqu'à sa clôture."
   );
   doc.moveDown(0.5);
 
   const startX = doc.page.margins.left;
   const usableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-  const widths = [usableWidth * 0.42, usableWidth * 0.18, usableWidth * 0.18, usableWidth * 0.22];
-  const headers = ["Action", "Priorité", "Échéance", "Responsable"];
-  const rowH = 22;
+  const mockupH = 108;
+  const gap = usableWidth * 0.04;
+  const mockupW = (usableWidth - gap) / 2;
+  const mockupY = doc.y;
 
-  const containerTop = doc.y;
-  const containerHeight = rowH * (TRACKING_PREVIEW_ROWS.length + 1) + 12;
-  doc.roundedRect(startX, containerTop, usableWidth, containerHeight, 6).fillAndStroke("#f8fafc", "#e2e8f0");
-
-  let y = containerTop + 8;
-  let x = startX + 10;
-  doc.font("Helvetica-Bold").fontSize(8).fillColor("#64748b");
-  headers.forEach((h, i) => {
-    doc.text(h, x, y, { width: widths[i] - 10, lineBreak: false });
-    x += widths[i];
-  });
-  y += rowH;
-
-  TRACKING_PREVIEW_ROWS.forEach((row) => {
-    x = startX + 10;
-    doc.font("Helvetica").fontSize(8.5).fillColor("#1e293b")
-      .text(row.action, x, y + 3, { width: widths[0] - 14, lineBreak: false });
-    x += widths[0];
-
-    doc.font("Helvetica-Bold").fontSize(7.5);
-    const pillWidth = doc.widthOfString(row.priorite) + 14;
-    doc.roundedRect(x, y, pillWidth, 15, 4).fill(row.couleur);
-    doc.fillColor("#ffffff").text(row.priorite, x, y + 4, { width: pillWidth, align: "center", lineBreak: false });
-    x += widths[1];
-
-    doc.font("Helvetica").fontSize(8.5).fillColor("#1e293b")
-      .text(row.echeance, x, y + 3, { width: widths[2] - 10, lineBreak: false });
-    x += widths[2];
-
-    doc.text(row.responsable, x, y + 3, { width: widths[3] - 10, lineBreak: false });
-    y += rowH;
-  });
-
-  doc.font("Helvetica-Oblique").fontSize(7).fillColor("#94a3b8")
-    .text("Exemple illustratif — le contenu réel dépend de vos réponses.", startX + 10, containerTop + containerHeight - 12);
+  drawMatrixMockup(doc, startX, mockupY, mockupW, mockupH);
+  drawCalendarMockup(doc, startX + mockupW + gap, mockupY, mockupW, mockupH);
 
   doc.x = startX;
-  doc.y = containerTop + containerHeight + 18;
+  doc.y = mockupY + mockupH + 16;
+
+  doc.fontSize(10.5).fillColor(BRAND_GREEN_DARK).font("Helvetica-Bold")
+    .text("Fonctionnalités disponibles sur la plateforme Reglo+");
+  doc.moveDown(0.3);
+
+  const listTop = doc.y;
+  const colWidth = usableWidth / 2;
+  const rowH = 14;
+  doc.font("Helvetica").fontSize(8.5).fillColor("#334155");
+  PLATFORM_FEATURES.forEach((feature, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    doc.text(`•  ${feature}`, startX + col * colWidth, listTop + row * rowH, {
+      width: colWidth - 10,
+      lineBreak: false,
+    });
+  });
+
+  doc.x = startX;
+  doc.y = listTop + Math.ceil(PLATFORM_FEATURES.length / 2) * rowH + 8;
 };
 
 // ============================
