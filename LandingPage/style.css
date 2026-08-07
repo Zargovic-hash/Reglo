@@ -21,6 +21,10 @@
   --green-900: #14532d;
   --amber-500: #f59e0b;
   --red-500: #ef4444;
+  --accent-orange: #ff6d5a;
+  --accent-pink: #ea4b71;
+  --accent-violet: #7c3aed;
+  --accent-gradient: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-pink) 45%, var(--accent-violet) 100%);
   --radius: 14px;
   --radius-sm: 10px;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -132,9 +136,10 @@ body {
   box-shadow: var(--shadow-sm);
 }
 .hero h1 {
-  font-size: clamp(28px, 4.2vw, 42px);
-  line-height: 1.22;
-  letter-spacing: -0.015em;
+  font-size: clamp(29px, 4.4vw, 44px);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
   color: var(--slate-900);
   margin: 0 0 18px;
 }
@@ -299,11 +304,11 @@ body {
 .btn-primary {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--primary-600), var(--primary-700));
+  background: var(--accent-gradient);
   color: #fff;
   padding: 12px 22px;
   font-size: 15px;
-  box-shadow: 0 1px 2px rgba(29, 78, 216, 0.1), 0 6px 16px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.1), 0 6px 18px rgba(234, 75, 113, 0.32);
 }
 .btn-primary::after {
   content: "";
@@ -319,7 +324,7 @@ body {
 .btn-primary:hover:not(:disabled)::after { left: 125%; }
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.12), 0 10px 22px rgba(37, 99, 235, 0.34);
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.14), 0 10px 26px rgba(234, 75, 113, 0.4);
 }
 .btn-primary:active:not(:disabled) { transform: translateY(0); }
 .btn-outline {
@@ -358,7 +363,7 @@ body {
 .progress-fill {
   height: 100%;
   width: 6.25%;
-  background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+  background: var(--accent-gradient);
   transition: width .25s ease;
 }
 .progress-label {
@@ -499,10 +504,24 @@ body {
 .done-sub { color: var(--slate-600); font-size: 15px; }
 
 /* Section title */
+.eyebrow {
+  display: block;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 10px;
+}
 .section-title {
   text-align: center;
-  font-size: clamp(23px, 3vw, 30px);
-  letter-spacing: -0.015em;
+  font-size: clamp(24px, 3.2vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--slate-900);
   margin: 0 0 32px;
 }
@@ -553,14 +572,14 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(180deg, var(--primary-500), var(--primary-700));
+  background: var(--accent-gradient);
   color: #fff;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 14px;
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 6px 14px rgba(234, 75, 113, 0.32);
   transition: transform .3s cubic-bezier(.34,1.56,.64,1);
 }
 .how-step:hover .how-num { transform: scale(1.15); }
@@ -655,16 +674,22 @@ body {
 }
 
 /* Regulatory database section */
-.db-section { padding: 64px 0; background: var(--slate-900); color: #fff; }
-.db-section .section-title { color: #fff; }
+.db-section { padding: 64px 0; background: var(--slate-50); }
 .db-intro {
   text-align: center;
   max-width: 640px;
   margin: 0 auto 28px;
-  color: var(--slate-300);
+  color: var(--slate-600);
   font-size: 15px;
 }
-.db-intro strong { color: #fff; }
+.db-intro strong { color: var(--slate-900); }
+.stat-count {
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .db-marquee {
   overflow: hidden;
   margin-bottom: 36px;
@@ -683,17 +708,18 @@ body {
   to { transform: translateX(-50%); }
 }
 .db-tag {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  color: var(--slate-700, var(--slate-800));
   font-size: 13px;
   font-weight: 600;
   padding: 8px 16px;
   border-radius: 999px;
   white-space: nowrap;
-  transition: background-color .2s ease, border-color .2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .2s ease, transform .2s ease;
 }
-.db-tag:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28); }
+.db-tag:hover { border-color: var(--accent-pink); transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) {
   .db-marquee-track { animation: none; }
 }
@@ -701,13 +727,14 @@ body {
   max-width: 640px;
   margin: 0 auto;
   text-align: center;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #fff;
+  border: 1px solid var(--slate-200);
+  box-shadow: var(--shadow-sm);
   border-radius: var(--radius);
   padding: 28px 28px 26px;
 }
 .db-cta-text {
-  color: var(--slate-100, #f1f5f9);
+  color: var(--slate-600);
   font-size: 15px;
   margin: 0 0 20px;
 }
@@ -740,6 +767,25 @@ body {
 .service-card.service-card--highlight:hover { border-color: var(--green-500); }
 .service-card h3 { font-size: 15px; color: var(--slate-900); margin: 0 0 8px; }
 .service-card p { font-size: 13px; color: var(--slate-600); margin: 0; }
+
+/* Colorful feature icons, one per service card (Jira-style feature grid) */
+.service-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  margin: 0 auto 12px;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.service-icon svg { width: 20px; height: 20px; }
+.service-card:hover .service-icon { transform: scale(1.1) rotate(-4deg); }
+.service-icon--blue { background: var(--primary-50); color: var(--primary-600); }
+.service-icon--green { background: var(--green-50); color: var(--green-600); }
+.service-icon--violet { background: #f3ebfe; color: var(--accent-violet); }
+.service-icon--orange { background: #ffece8; color: var(--accent-orange); }
+.service-icon--white { background: rgba(255, 255, 255, 0.18); color: #fff; }
 
 /* FAQ */
 .faq-section { padding: 64px 0 88px; background: var(--slate-50); }
