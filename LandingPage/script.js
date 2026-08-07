@@ -298,3 +298,57 @@ if (stickyCtaEl) {
     if (footerEl) blockingObserver.observe(footerEl);
   }
 }
+
+// ============================
+// Topbar : ombre discrète une fois la page défilée (profondeur visuelle).
+// ============================
+const topbarEl = document.querySelector(".topbar");
+if (topbarEl) {
+  const syncTopbarShadow = () => topbarEl.classList.toggle("scrolled", window.scrollY > 8);
+  syncTopbarShadow();
+  window.addEventListener("scroll", syncTopbarShadow, { passive: true });
+}
+
+// ============================
+// Compteur animé : les éléments ".stat-count" comptent de 0 à leur
+// data-target dès leur premier passage à l'écran.
+// ============================
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function animateCount(el) {
+  const target = Number(el.dataset.target || 0);
+  if (prefersReducedMotion || !target) {
+    el.textContent = target;
+    return;
+  }
+  const duration = 1200;
+  const start = performance.now();
+  const easeOutQuad = (t) => t * (2 - t);
+
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    el.textContent = Math.round(target * easeOutQuad(progress));
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+const statCountEls = document.querySelectorAll(".stat-count");
+if (statCountEls.length) {
+  if ("IntersectionObserver" in window) {
+    const countObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            animateCount(entry.target);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+    statCountEls.forEach((el) => countObserver.observe(el));
+  } else {
+    statCountEls.forEach(animateCount);
+  }
+}
