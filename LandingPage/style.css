@@ -608,8 +608,8 @@ body {
 /* Services: 8-card variant + highlighted digital-tool card */
 .services-grid-8 { grid-template-columns: repeat(4, 1fr); }
 .service-card.service-card--highlight {
-  background: linear-gradient(160deg, var(--green-900), var(--green-700));
-  border-color: var(--green-700);
+  background: linear-gradient(160deg, var(--primary-900), var(--primary-700));
+  border-color: var(--primary-700);
 }
 .service-card.service-card--highlight h3,
 .service-card.service-card--highlight p { color: #fff; }
@@ -765,7 +765,7 @@ body {
   transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
 .service-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-200, var(--primary-100)); }
-.service-card.service-card--highlight:hover { border-color: var(--green-500); }
+.service-card.service-card--highlight:hover { border-color: var(--primary-500); }
 .service-card h3 { font-size: 15px; color: var(--slate-900); margin: 0 0 8px; }
 .service-card p { font-size: 13px; color: var(--slate-600); margin: 0; }
 
